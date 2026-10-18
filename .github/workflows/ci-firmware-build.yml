@@ -1,0 +1,29 @@
+name: CI - Firmware Build
+
+on:
+  push:
+    paths:
+      - 'firmware/**'
+  pull_request:
+    paths:
+      - 'firmware/**'
+
+jobs:
+  build:
+    name: Compile Firmware (PlatformIO)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+
+      - name: Install PlatformIO Core
+        run: pip install -U platformio
+
+      - name: Build Arduino Firmware
+        working-directory: ./firmware
+        run: pio run

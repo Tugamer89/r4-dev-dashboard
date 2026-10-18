@@ -1,0 +1,24 @@
+name: C++ Linter
+
+on:
+  push:
+    paths:
+      - 'firmware/**'
+      - '.clang-format'
+  pull_request:
+    paths:
+      - 'firmware/**'
+      - '.clang-format'
+
+jobs:
+  clang-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup clang-format
+        run: sudo apt-get install -y clang-format
+
+      - name: Run clang-format check
+        run: |
+          find firmware/src firmware/include -name "*.cpp" -o -name "*.h" | xargs clang-format --Werror --dry-run

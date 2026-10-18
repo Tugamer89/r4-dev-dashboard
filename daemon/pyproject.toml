@@ -1,0 +1,21 @@
+[project]
+name = "r4-daemon"
+version = "0.1.0"
+description = "Telemetry and build monitoring daemon for Arduino R4"
+requires-python = ">=3.10"
+dependencies = [
+    "psutil>=5.9.0",
+    "websockets>=12.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.3.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

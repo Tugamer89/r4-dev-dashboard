@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+daemon/.venv/
+daemon/.ruff_cache/
+*.egg-info/
+
+# PlatformIO
+firmware/.pio/
+firmware/.vscode/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# OS specific
+.DS_Store
+Thumbs.db
