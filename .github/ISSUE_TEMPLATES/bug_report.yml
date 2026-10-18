@@ -1,0 +1,54 @@
+name: Bug Report
+description: Create a report to help us improve r4-dev-dashboard
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us, what did you expect to happen?
+      placeholder: Tell us what you see and what you expected.
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Component
+      description: Which part of r4-dev-dashboard is affected?
+      options:
+        - Firmware (Arduino / PlatformIO)
+        - Daemon (Python / WebSocket Server)
+        - Scripts / Automation
+        - CI/CD & Workflows
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this issue?
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs or Output
+      description: Please copy and paste any relevant logs, terminal output, or serial monitor traces.
+      placeholder: "Paste logs here..."
+    validations:
+      required: false
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Details
+      description: Operating system, hardware setup, Python version, PlatformIO version, etc.
+      placeholder: "OS: Windows 11 / Ubuntu, Python version, etc."
+    validations:
+      required: false
