@@ -4,7 +4,7 @@ import json
 import psutil
 
 
-async def monitor_system():
+async def monitor_system() -> None:
     while True:
         cpu_percent = psutil.cpu_percent(interval=None)
         memory = psutil.virtual_memory()
@@ -17,7 +17,7 @@ async def monitor_system():
         await asyncio.sleep(1)
 
 
-async def main():
+async def main() -> None:
     print("Starting R4 Dev Dashboard Daemon...")
     await monitor_system()
 
