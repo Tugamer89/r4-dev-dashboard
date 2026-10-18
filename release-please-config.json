@@ -4,7 +4,11 @@
       "release-type": "simple",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": true
+      "bump-patch-for-minor-pre-major": true,
+      "extra-files": [
+        "daemon/pyproject.toml",
+        "daemon/src/__init__.py"
+      ]
     }
   }
 }
