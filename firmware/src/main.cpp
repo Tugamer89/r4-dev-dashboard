@@ -1,13 +1,11 @@
 #include <Arduino.h>
 
-#include "Arduino_LED_Matrix.h"
+#include "DisplayEngine.h"
+#include "NetworkManager.h"
 #include "StateMachine.h"
 
+// Initialize the global state
 SystemMode currentMode = SystemMode::MODE_IDLE;
-ArduinoLEDMatrix matrix;
-
-unsigned long previousMillis = 0;
-const long interval          = 100;  // 100ms refresh rate
 
 void updateState(SystemMode newMode) {
     if (currentMode != newMode) {
@@ -17,43 +15,19 @@ void updateState(SystemMode newMode) {
     }
 }
 
-void handleIdleMode() {
-    // Render CPU/RAM telemetry histogram
-}
-
-void handleBuildMode() {
-    // Render build progress animation
-}
-
-void handleCICDMode() {
-    // Render CI/CD success/failure status
-}
-
 void setup() {
     Serial.begin(115200);
-    matrix.begin();
+
+    setupDisplay();
+    setupWiFi();
+
     Serial.println("R4 Dev Dashboard Initialized");
 }
 
 void loop() {
-    unsigned long currentMillis = millis();
+    // Process WiFi logic and incoming WS telemetry asynchronously
+    processIncomingData();
 
-    // Non-blocking timer
-    if (currentMillis - previousMillis >= interval) {
-        previousMillis = currentMillis;
-
-        switch (currentMode) {
-            case SystemMode::MODE_IDLE:
-                handleIdleMode();
-                break;
-            case SystemMode::MODE_BUILD:
-                handleBuildMode();
-                break;
-            case SystemMode::MODE_CICD:
-                handleCICDMode();
-                break;
-        }
-    }
-
-    // Non-blocking WebSockets listener logic goes here
+    // Render the display based on current mode and metrics (non-blocking)
+    renderDisplay();
 }
