@@ -1,4 +1,5 @@
 import asyncio
+import importlib.metadata
 import json
 
 import psutil
@@ -17,8 +18,17 @@ async def monitor_system() -> None:
         await asyncio.sleep(1)
 
 
+def get_daemon_version() -> str:
+    """Retrieve the installed package version dynamically."""
+    try:
+        return importlib.metadata.version("r4-daemon")
+    except importlib.metadata.PackageNotFoundError:
+        return "development"
+
+
 async def main() -> None:
-    print("Starting R4 Dev Dashboard Daemon...")
+    version = get_daemon_version()
+    print(f"Starting R4 Dev Dashboard Daemon v{version}...")
     await monitor_system()
 
 
