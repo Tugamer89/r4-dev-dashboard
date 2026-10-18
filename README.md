@@ -1,5 +1,7 @@
 # R4 Dev Dashboard
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A developer dashboard based on the Arduino Uno R4 WiFi, designed for professional monitoring and CI/CD status display.
 
 ## Project Overview
