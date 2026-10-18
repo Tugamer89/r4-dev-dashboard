@@ -1,12 +1,14 @@
-# R4 Dev Dashboard - Daemon
+# Python System Daemon
 
-A background service responsible for orchestrating data flow to the Arduino R4.
+## Overview
 
-## Features
+The daemon bridges OS metrics and development events to the Arduino R4 dashboard. It utilizes `psutil` to abstract OS-specific hardware calls securely and reliably.
 
-- **Hardware Telemetry**: Monitors CPU and RAM usage via `psutil`.
-- **WebSocket Server**: Streams JSON payloads to the Arduino asynchronously.
+## Tooling
 
-## OS Context Warning
+* **Dependency Management**: `uv` is strictly used for managing the Python environment.
+* **Linting**: Code quality and formatting are enforced with `ruff` via `pre-commit` hooks.
 
-When running this daemon inside WSL (Windows Subsystem for Linux), `psutil` will report the metrics of the Linux Virtual Machine, not the Windows host. For accurate host telemetry, run this daemon natively on Windows.
+## Running the Daemon in WSL
+
+**Crucial Note**: The `psutil` library reads the hardware of the environment it is executing in. If you run this daemon inside a WSL container, it will report the Linux virtual machine's metrics, not the physical Windows host. To monitor your actual hardware, run the daemon directly on the Windows host.

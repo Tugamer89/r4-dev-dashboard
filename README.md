@@ -1,36 +1,29 @@
 # R4 Dev Dashboard
 
-A professional, desk-mounted hardware monitor based on the Arduino Uno R4 WiFi. It leverages the 12x8 LED matrix to provide continuous, non-intrusive visual feedback during development sessions.
+A developer dashboard based on the Arduino Uno R4 WiFi, designed for professional monitoring and CI/CD status display.
 
-## Architecture Overview
+## Project Overview
 
-This repository is split into two isolated, highly cohesive modules:
+* **/daemon/**: A cross-platform Python daemon utilizing `psutil` to extract and broadcast system and CI/CD metrics.
+* **/firmware/**: C++ firmware for the Arduino Uno R4 WiFi, built on a robust, non-blocking state machine pattern.
 
-1. **Firmware (`/firmware`)**: C++ logic running on the Arduino R4. It uses a non-blocking State Machine (`MODE_IDLE`, `MODE_BUILD`, `MODE_CICD`) to handle dynamic LED matrix animations based on WebSocket events.
-2. **Daemon (`/daemon`)**: A cross-platform Python service running on the host machine. It gathers hardware telemetry via `psutil`, intercepts local build processes, and monitors CI/CD pipelines, streaming state changes to the Arduino.
+## Guidelines & Core Principles
 
-## Quick Start
+* **English Only**: ALL code, variables, comments, documentation, and commit messages MUST be in English. No exceptions.
+* **Entry Point**: `Makefile` is the primary entry point for all operations (build, upload, run, lint).
+* **CI/CD & Tooling**:
+  * Python dependencies are managed via `uv`.
+  * C++ dependencies and compilation are handled by `PlatformIO`.
+  * Code quality is enforced via `pre-commit` hooks (`clang-format` for C++ and `ruff` for Python) and analyzed by `SonarCloud`.
+  * Dependencies and GitHub Actions are continuously updated via `Dependabot`.
 
-We use a unified `Makefile` to manage the lifecycle of both the daemon and the firmware.
+## Development Environment Setup
 
-```bash
-# 1. Setup the Python virtual environment and pre-commit hooks
-make setup
+1. **VS Code Workspace**: Open the project using the Multi-root Workspace (`.code-workspace`) file. This is crucial for the PlatformIO extension to recognize the nested `/firmware` directory as a C++ project root and correctly resolve IntelliSense.
+2. **WSL Development**:
+    * **USB Bridging**: Flashing the Arduino from WSL requires `usbipd` to forward the COM port from the Windows host to Linux.
+    * **Daemon Monitoring**: Note that running `psutil` inside WSL reads the VM's hardware, not the Windows host. Run the daemon on Windows directly to monitor the physical host.
 
-# 2. Build and upload the C++ firmware (requires PlatformIO)
-make upload
+## License
 
-# 3. Start the background Python daemon
-make run-daemon
-```
-
-### WSL Development Note
-
-If you are developing inside Windows Subsystem for Linux (WSL), the native USB ports are not directly accessible. Before running `make upload`, you must bridge the Arduino to your Linux VM.
-Run the provided PowerShell script from your Windows host (outside of VS Code/WSL):
-`.\scripts\windows\attach_arduino.ps1`
-
-## Tooling
-
-- **Dependency Management:** `uv` for Python, `PlatformIO` for C++.
-- **Code Quality:** `pre-commit` enforces `clang-format` (C++) and `ruff` (Python) rules locally. GitHub Actions validate these rules on every push.
+This project is licensed under the terms found in the `LICENSE` file. For contribution and behavioral guidelines, see `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md`.
