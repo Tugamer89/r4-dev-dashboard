@@ -2,27 +2,43 @@ name: Python Linter
 
 on:
   push:
-    paths:
-      - 'daemon/**'
+    branches:
+      - '**'
   pull_request:
-    paths:
-      - 'daemon/**'
+    branches:
+      - '**'
 
 jobs:
-  ruff:
+  filter:
+    name: Filter Changes
     runs-on: ubuntu-latest
+    outputs:
+      python: ${{ steps.changes.outputs.python }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: changes
+        with:
+          filters: |
+            python:
+              - 'daemon/**'
+
+  ruff:
+    name: ruff
+    needs: filter
+    runs-on: ubuntu-latest
+    if: needs.filter.outputs.python == 'true'
     steps:
       - uses: actions/checkout@v7
 
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.3.0
 
-      - name: Set up Python
-        run: uv venv && source .venv/bin/activate
-
-      - name: Install dependencies
+      - name: Set up environment and install dependencies
         working-directory: ./daemon
-        run: uv pip install -e .[dev]
+        run: |
+          uv venv
+          uv pip install -e .[dev]
 
       - name: Check formatting
         working-directory: ./daemon

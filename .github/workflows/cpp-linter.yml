@@ -2,17 +2,33 @@ name: C++ Linter
 
 on:
   push:
-    paths:
-      - 'firmware/**'
-      - '.clang-format'
+    branches:
+      - '**'
   pull_request:
-    paths:
-      - 'firmware/**'
-      - '.clang-format'
+    branches:
+      - '**'
 
 jobs:
-  clang-format:
+  filter:
+    name: Filter Changes
     runs-on: ubuntu-latest
+    outputs:
+      cpp: ${{ steps.changes.outputs.cpp }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: changes
+        with:
+          filters: |
+            cpp:
+              - 'firmware/**'
+              - '.clang-format'
+
+  clang-format:
+    name: clang-format
+    needs: filter
+    runs-on: ubuntu-latest
+    if: needs.filter.outputs.cpp == 'true'
     steps:
       - uses: actions/checkout@v7
 
