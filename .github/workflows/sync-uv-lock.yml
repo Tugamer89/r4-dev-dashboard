@@ -1,0 +1,44 @@
+name: Sync uv.lock on Release Please PR
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  sync-lock:
+    runs-on: ubuntu-latest
+    if: startsWith(github.head_ref, 'release-please-')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.0
+        with:
+          enable-cache: true
+
+      - name: Run Makefile setup / lock update
+        run: |
+          make setup
+
+      - name: Check for lock file changes
+        id: verify-changed-files
+        uses: tj-actions/verify-changed-files@v20
+        with:
+          files: daemon/uv.lock
+
+      - name: Commit and push updated uv.lock if changed
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          file_pattern: daemon/uv.lock
+          commit_message: "chore(deps): automatically update uv.lock for release"
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "github-actions[bot]@users.noreply.github.com"
