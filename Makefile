@@ -1,6 +1,6 @@
 BUSID ?=
 
-.PHONY: setup lint lint-fix build upload monitor upload-monitor attach run-daemon clean
+.PHONY: setup lint lint-fix build upload monitor upload-monitor attach run-daemon run-daemon-win clean
 
 setup:
 	@echo "Setting up Python environment and pre-commit hooks..."
@@ -40,6 +40,10 @@ attach:
 run-daemon:
 	@echo "Starting Python daemon..."
 	cd daemon && uv run python -m src.main
+
+run-daemon-win:
+	@echo "Starting Python daemon on Windows host..."
+	powershell.exe -ExecutionPolicy Bypass -Command "cd '$$(wslpath -w $$(pwd)/daemon)'; python3 src/main.py"
 
 clean:
 	@echo "Cleaning builds..."
