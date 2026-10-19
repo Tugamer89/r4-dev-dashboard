@@ -1,5 +1,7 @@
 #include "DisplayEngine.h"
 
+#include <array>
+
 #include "Arduino_LED_Matrix.h"
 #include "StateMachine.h"
 
@@ -25,11 +27,11 @@ void updateMetrics(float cpu, float ram, float gpu) {
 }
 
 void renderIdle() {
-    int cpuHeight = (int)((currentCpu / 100.0) * 8);
-    int ramHeight = (int)((currentRam / 100.0) * 8);
-    int gpuHeight = (int)((currentGpu / 100.0) * 8);
+    auto cpuHeight = static_cast<int>((currentCpu / 100.0) * 8);
+    auto ramHeight = static_cast<int>((currentRam / 100.0) * 8);
+    auto gpuHeight = static_cast<int>((currentGpu / 100.0) * 8);
 
-    uint8_t frame[8][12] = {0};
+    std::array<std::array<uint8_t, 12>, 8> frame{};
 
     // CPU (Left, Cols 1 and 2)
     for (int i = 0; i < cpuHeight; i++) {
@@ -49,13 +51,13 @@ void renderIdle() {
         frame[7 - i][10] = 1;
     }
 
-    matrix.renderBitmap(frame, 8, 12);
+    matrix.renderBitmap(frame.data(), 8, 12);
 }
 
 void renderBuild() {
-    uint8_t frame[8][12] = {0};
-    static int pos       = 1;
-    static int dir       = 1;
+    std::array<std::array<uint8_t, 12>, 8> frame{};
+    static int pos = 1;
+    static int dir = 1;
 
     // Reset animation parameters if we just transitioned into the build state
     if (previousMode != SystemMode::MODE_BUILD) {
@@ -74,17 +76,22 @@ void renderBuild() {
         dir = -dir;  // Reverse direction when hitting the edges
     }
 
-    matrix.renderBitmap(frame, 8, 12);
+    matrix.renderBitmap(frame.data(), 8, 12);
 }
 
 void renderCicd() {
     // A simple static checkmark to indicate CI/CD success
-    uint8_t frame[8][12] = {
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
-        {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0}, {0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0},
-        {0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0}};
-    matrix.renderBitmap(frame, 8, 12);
+    std::array<std::array<uint8_t, 12>, 8> frame = {{
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
+        {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
+        {0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0},
+        {0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0},
+    }};
+    matrix.renderBitmap(frame.data(), 8, 12);
 }
 
 void renderDisplay() {

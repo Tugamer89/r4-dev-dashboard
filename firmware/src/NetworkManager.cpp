@@ -54,7 +54,7 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
         }
 
         // CPU and RAM metrics extraction
-        if (doc.containsKey("cpu") && doc.containsKey("ram")) {
+        if (doc["cpu"].is<float>() && doc["ram"].is<float>() && doc["gpu"].is<float>()) {
             float cpu = doc["cpu"];
             float ram = doc["ram"];
             float gpu = doc["gpu"];
@@ -101,7 +101,7 @@ void setupWiFi() {
 }
 
 void processIncomingData() {
-    // Maintain WiFi Connection (Non-blocking fallback in case it drops during loop)
+    // Maintain WiFi Connection
     if (WiFi.status() != WL_CONNECTED) {
         isWiFiConnected = false;
 
