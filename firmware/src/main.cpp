@@ -4,8 +4,9 @@
 #include "NetworkManager.h"
 #include "StateMachine.h"
 
-// Initialize the global state
-SystemMode currentMode = SystemMode::MODE_IDLE;
+// Initialize the global states
+SystemMode currentMode     = SystemMode::MODE_IDLE;
+CicdState currentCicdState = CicdState::UNKNOWN;
 
 void updateState(SystemMode newMode) {
     if (currentMode != newMode) {
@@ -15,12 +16,18 @@ void updateState(SystemMode newMode) {
     }
 }
 
+void updateCicdState(CicdState newState) {
+    if (currentCicdState != newState) {
+        currentCicdState = newState;
+        Serial.print("CI/CD State changed to: ");
+        Serial.println(static_cast<int>(currentCicdState));
+    }
+}
+
 void setup() {
     Serial.begin(115200);
-
     setupDisplay();
     setupWiFi();
-
     Serial.println("R4 Dev Dashboard Initialized");
 }
 

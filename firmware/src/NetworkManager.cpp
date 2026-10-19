@@ -53,6 +53,19 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
             }
         }
 
+        const char* cicd_state = doc["cicd_state"];
+        if (cicd_state) {
+            if (strcmp(cicd_state, "in_progress") == 0) {
+                updateCicdState(CicdState::IN_PROGRESS);
+            } else if (strcmp(cicd_state, "success") == 0) {
+                updateCicdState(CicdState::SUCCESS);
+            } else if (strcmp(cicd_state, "failure") == 0) {
+                updateCicdState(CicdState::FAILURE);
+            } else {
+                updateCicdState(CicdState::UNKNOWN);
+            }
+        }
+
         // CPU and RAM metrics extraction
         if (doc["cpu"].is<float>() && doc["ram"].is<float>() && doc["gpu"].is<float>()) {
             float cpu = doc["cpu"];
@@ -86,6 +99,7 @@ void setupWiFi() {
         delay(1500);
         Serial.print(".");
     }
+
     Serial.println("\nWiFi Connected Successfully!");
     isWiFiConnected = true;
 
@@ -103,9 +117,9 @@ void setupWiFi() {
 void processIncomingData() {
     // Maintain WiFi Connection
     if (WiFi.status() != WL_CONNECTED) {
-        isWiFiConnected = false;
-
+        isWiFiConnected             = false;
         unsigned long currentMillis = millis();
+
         if (currentMillis - lastNetworkAttempt >= networkInterval || lastNetworkAttempt == 0) {
             lastNetworkAttempt = currentMillis;
             Serial.println("Connection lost. Reconnecting to WiFi...");
