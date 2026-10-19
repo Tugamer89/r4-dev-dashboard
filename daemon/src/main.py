@@ -48,6 +48,10 @@ async def monitor_github() -> None:
         interval = config.get("polling_interval_sec", 15)
         token = config.get("github_token", "")
 
+        # Defensive fallback
+        if not token and interval < 60:
+            interval = 60
+
         target_repo = await _resolve_target_repo(config)
         await _fetch_and_update_cicd(target_repo, token)
 
@@ -109,7 +113,7 @@ async def main() -> None:
     version = get_daemon_version()
     print(f"Starting R4 Dev Dashboard Daemon v{version}...")
 
-    # Run the WebSocket server and monitoring tasks concurrently
+    # Run the UDP server and monitoring tasks concurrently
     await asyncio.gather(start_server(), monitor_system(), monitor_github())
 
 
