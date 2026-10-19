@@ -11,8 +11,8 @@ class UDPProtocol(asyncio.DatagramProtocol):
         self.transport = transport
 
     def datagram_received(self, data, addr):
-        # When the Arduino sends a PING packet, register its address
-        if addr not in connected_clients:
+        # Only register clients that send the exact exact expected PING handshake
+        if data.strip() == b"PING" and addr not in connected_clients:
             print(f"Registered new R4 client at {addr}")
             connected_clients.add(addr)
 
