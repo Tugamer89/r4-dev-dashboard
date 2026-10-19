@@ -1,4 +1,6 @@
-.PHONY: setup lint lint-fix build upload run-daemon clean
+BUSID ?=
+
+.PHONY: setup lint lint-fix build upload monitor upload-monitor attach run-daemon clean
 
 setup:
 	@echo "Setting up Python environment and pre-commit hooks..."
@@ -22,6 +24,18 @@ build:
 upload:
 	@echo "Uploading firmware to Arduino R4..."
 	cd firmware && pio run --target upload
+
+monitor:
+	@echo "Opening serial monitor (Press Ctrl+C to exit)..."
+	cd firmware && pio device monitor
+
+upload-monitor:
+	@echo "Uploading firmware and opening serial monitor..."
+	cd firmware && pio run --target upload && pio device monitor
+
+attach:
+	@echo "Attaching Arduino USB device to WSL..."
+	powershell.exe -ExecutionPolicy Bypass -File ./scripts/windows/attach_arduino.ps1 $(if $(BUSID),-BusId $(BUSID))
 
 run-daemon:
 	@echo "Starting Python daemon..."
