@@ -5,9 +5,10 @@
 
 ArduinoLEDMatrix matrix;
 
-float currentCpu                   = 0.0;
-float currentRam                   = 0.0;
-float currentGpu                   = 0.0;
+float currentCpu = 0.0;
+float currentRam = 0.0;
+float currentGpu = 0.0;
+
 unsigned long lastRenderTime       = 0;
 const unsigned long renderInterval = 100;  // 10 FPS rendering
 
@@ -49,6 +50,35 @@ void renderIdle() {
     matrix.renderBitmap(frame, 8, 12);
 }
 
+void renderBuild() {
+    uint8_t frame[8][12] = {0};
+    static int pos       = 0;
+    static int dir       = 1;
+
+    // Draw an animated scanning horizontal bar to indicate "working/building"
+    for (int r = 2; r < 6; r++) {
+        frame[r][pos] = 1;
+        if (pos > 0) frame[r][pos - 1] = 1;  // Make the scanner 2 pixels wide
+    }
+
+    pos += dir;
+    if (pos >= 11 || pos <= 0) {
+        dir = -dir;  // Reverse direction when hitting the edges
+    }
+
+    matrix.renderBitmap(frame, 8, 12);
+}
+
+void renderCicd() {
+    // A simple static checkmark to indicate CI/CD success
+    uint8_t frame[8][12] = {
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
+        {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0}, {0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0},
+        {0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0}};
+    matrix.renderBitmap(frame, 8, 12);
+}
+
 void renderDisplay() {
     unsigned long currentMillis = millis();
 
@@ -64,10 +94,10 @@ void renderDisplay() {
             renderIdle();
             break;
         case SystemMode::MODE_BUILD:
-            // Placeholder build animation
+            renderBuild();
             break;
         case SystemMode::MODE_CICD:
-            // Placeholder CI/CD animation
+            renderCicd();
             break;
     }
 }

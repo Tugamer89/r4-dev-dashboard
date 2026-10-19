@@ -28,15 +28,11 @@
 unsigned long lastNetworkAttempt    = 0;
 const unsigned long networkInterval = 5000;  // 5 seconds retry interval
 bool isWiFiConnected                = false;
-bool isWsConfigured                 = false;
 
 WebSocketsClient wsClient;
 
 void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
     if (type == WStype_TEXT) {
-        Serial.print("Incoming WS Payload: ");
-        Serial.println((char*)payload);
-
         JsonDocument doc;
         DeserializationError error = deserializeJson(doc, payload);
 
@@ -76,43 +72,53 @@ void setupWiFi() {
     Serial.println("Initializing WiFi module...");
     if (WiFi.status() == WL_NO_MODULE) {
         Serial.println("Communication with WiFi module failed!");
-        return;
+        while (true) {
+            yield();  // Halt execution safely
+        }
     }
+
+    Serial.print("Connecting to WiFi: ");
+    Serial.println(WIFI_SSID);
+
+    // Block until the initial connection is established to ensure stability
+    while (WiFi.status() != WL_CONNECTED) {
+        WiFi.begin(WIFI_SSID, WIFI_PASS);
+        delay(1500);
+        Serial.print(".");
+    }
+    Serial.println("\nWiFi Connected Successfully!");
+    isWiFiConnected = true;
+
+    // Configure WebSocket Client
+    Serial.print("Starting WS Client to ws://");
+    Serial.print(WS_SERVER_IP);
+    Serial.print(":");
+    Serial.println(WS_SERVER_PORT);
+
+    wsClient.begin(WS_SERVER_IP, WS_SERVER_PORT, "/");
+    wsClient.onEvent(webSocketEvent);
+    wsClient.setReconnectInterval(5000);  // Library handles auto-reconnect natively
 }
 
 void processIncomingData() {
-    unsigned long currentMillis = millis();
-
-    // Maintain WiFi Connection
+    // Maintain WiFi Connection (Non-blocking fallback in case it drops during loop)
     if (WiFi.status() != WL_CONNECTED) {
         isWiFiConnected = false;
+
+        unsigned long currentMillis = millis();
         if (currentMillis - lastNetworkAttempt >= networkInterval || lastNetworkAttempt == 0) {
             lastNetworkAttempt = currentMillis;
-            Serial.print("Connecting to WiFi: ");
-            Serial.println(WIFI_SSID);
+            Serial.println("Connection lost. Reconnecting to WiFi...");
             WiFi.begin(WIFI_SSID, WIFI_PASS);
         }
-        return;  // Wait for WiFi connection before processing WS
+        return;  // Skip WS processing if we don't have WiFi
     }
 
     if (!isWiFiConnected) {
-        Serial.println("WiFi Connected!");
+        Serial.println("WiFi Reconnected!");
         isWiFiConnected = true;
     }
 
-    // Configure WebSocket Client (only once after WiFi connects)
-    if (!isWsConfigured) {
-        Serial.print("Starting WS Client to ws://");
-        Serial.print(WS_SERVER_IP);
-        Serial.print(":");
-        Serial.println(WS_SERVER_PORT);
-
-        wsClient.begin(WS_SERVER_IP, WS_SERVER_PORT, "/");
-        wsClient.onEvent(webSocketEvent);
-        wsClient.setReconnectInterval(5000);  // Library handles auto-reconnect
-        isWsConfigured = true;
-    }
-
-    // Keep WebSocket connection alive and process incoming payloads
+    // Keep WebSocket connection alive and process incoming real-time payloads
     wsClient.loop();
 }

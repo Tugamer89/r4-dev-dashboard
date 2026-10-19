@@ -1,35 +1,21 @@
 import asyncio
 import importlib.metadata
-import json
-
-import psutil
-
-try:
-    import GPUtil
-except ImportError:
-    GPUtil = None
 
 from server_ws import broadcast_payload, start_server
+from system_monitor import get_cpu_load, get_gpu_load, get_ram_usage
 
 
 async def monitor_system() -> None:
     """Continuously monitor system metrics and broadcast them."""
     while True:
-        cpu_percent = psutil.cpu_percent(interval=None)
-        memory = psutil.virtual_memory()
-
-        gpu_percent = 0.0
-        if GPUtil is not None:
-            gpus = GPUtil.getGPUs()
-            if gpus:
-                gpu_percent = gpus[-1].load * 100.0
-
-        payload = {"mode": "idle", "cpu": cpu_percent, "ram": memory.percent, "gpu": gpu_percent}
-
-        print(f"Telemetry payload: {json.dumps(payload)}")
+        payload = {
+            "mode": "idle",
+            "cpu": get_cpu_load(),
+            "ram": get_ram_usage(),
+            "gpu": get_gpu_load(),
+        }
         broadcast_payload(payload)
-
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.1)
 
 
 def get_daemon_version() -> str:
@@ -43,7 +29,6 @@ def get_daemon_version() -> str:
 async def main() -> None:
     version = get_daemon_version()
     print(f"Starting R4 Dev Dashboard Daemon v{version}...")
-
     # Run the WebSocket server and the monitoring task concurrently
     await asyncio.gather(start_server(), monitor_system())
 
