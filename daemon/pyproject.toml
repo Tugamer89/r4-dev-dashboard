@@ -1,6 +1,6 @@
 [project]
 name = "r4-daemon"
-version = "0.1.0"
+version = "0.1.1"  # x-release-please-version
 description = "Telemetry and build monitoring daemon for Arduino R4"
 requires-python = ">=3.10"
 dependencies = [
