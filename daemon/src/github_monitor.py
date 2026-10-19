@@ -2,6 +2,7 @@
 
 import json
 import subprocess
+import urllib.error
 import urllib.request
 
 
@@ -36,7 +37,7 @@ def get_latest_cicd_status(owner: str, repo: str, token: str = "") -> str:
     Fetch the latest GitHub Actions workflow run status for the repository.
     Returns: 'in_progress', 'success', 'failure', or 'unknown'.
     """
-    url = f"https://api.github.com/repos/{owner}/{repo}/actions/runs?per_page=5"
+    url = f"https://api.github.com/repos/{owner}/{repo}/actions/runs?branch=main&per_page=5"
 
     req = urllib.request.Request(url)
     if token:
@@ -73,6 +74,10 @@ def get_latest_cicd_status(owner: str, repo: str, token: str = "") -> str:
                 return "success"
 
             return "unknown"
+    except urllib.error.HTTPError as e:
+        if e.code == 403:
+            print("GitHub API Rate Limit Exceeded. Please provide a token in ~/.r4-dashboard.json")
+        return "unknown"
     except Exception as e:
         print(f"Failed to fetch GitHub status: {e}")
         return "unknown"

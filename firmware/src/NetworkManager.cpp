@@ -26,7 +26,7 @@
 #endif
 
 unsigned long lastNetworkAttempt    = 0;
-const unsigned long networkInterval = 5000;  // 5 seconds retry interval
+const unsigned long networkInterval = 10000;  // 10 seconds retry interval
 bool isWiFiConnected                = false;
 
 WebSocketsClient wsClient;
@@ -93,11 +93,21 @@ void setupWiFi() {
     Serial.print("Connecting to WiFi: ");
     Serial.println(WIFI_SSID);
 
+    WiFi.begin(WIFI_SSID, WIFI_PASS);
+    unsigned long startAttemptTime = millis();
+
     // Block until the initial connection is established to ensure stability
     while (WiFi.status() != WL_CONNECTED) {
-        WiFi.begin(WIFI_SSID, WIFI_PASS);
-        delay(1500);
+        delay(500);  // Attendi mezzo secondo
         Serial.print(".");
+
+        if (millis() - startAttemptTime > networkInterval) {
+            Serial.println("\nRetrying connection...");
+            WiFi.disconnect();
+            delay(100);
+            WiFi.begin(WIFI_SSID, WIFI_PASS);
+            startAttemptTime = millis();
+        }
     }
 
     Serial.println("\nWiFi Connected Successfully!");

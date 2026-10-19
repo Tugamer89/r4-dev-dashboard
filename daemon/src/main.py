@@ -78,7 +78,6 @@ async def monitor_system() -> None:
         payload = {
             "mode": current_mode,
             "cicd_state": cicd_state,
-            "active_repo": active_repo or "None",
             "cpu": get_cpu_load(),
             "ram": get_ram_usage(),
             "gpu": get_gpu_load(),
