@@ -3,6 +3,7 @@
 import os
 import subprocess
 import sys
+import urllib.parse
 
 import psutil
 
@@ -29,12 +30,47 @@ def _parse_github_url(url: str) -> str | None:
     return f"{owner}/{repo}"
 
 
+def _get_repo_from_wsl_unc_path(unc_path: str) -> str | None:
+    """Extract repo using native WSL git if the path is a WSL UNC share."""
+    parts = unc_path.replace("/", "\\").split("\\")
+
+    if len(parts) >= 5 and parts[2].lower() in ("wsl.localhost", "wsl$"):
+        distro = parts[3]
+        wsl_path = "/" + "/".join(parts[4:])
+
+        creation_flags = (
+            getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000) if os.name == "nt" else 0
+        )
+
+        git_cmd = [
+            WSL_EXE,
+            "-d",
+            distro,
+            "-e",
+            "bash",
+            "-c",
+            f"cd '{wsl_path}' && git config --get remote.origin.url",
+        ]
+
+        try:
+            res = subprocess.run(
+                git_cmd, capture_output=True, text=True, creationflags=creation_flags
+            )
+            return _parse_github_url(res.stdout.strip())
+        except Exception:
+            pass
+    return None
+
+
 def _get_git_repo_from_dir(directory: str) -> str | None:
     """Run a git command in the target directory to extract the origin repository."""
-    try:
-        if not os.path.exists(os.path.join(directory, ".git")):
-            return None
+    # Bypass dubious ownership and UNC restrictions for WSL network shares
+    if directory.startswith(r"\\wsl.localhost") or directory.startswith(r"\\wsl$"):
+        repo = _get_repo_from_wsl_unc_path(directory)
+        if repo:
+            return repo
 
+    try:
         creation_flags = (
             getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000) if os.name == "nt" else 0
         )
@@ -52,35 +88,8 @@ def _get_git_repo_from_dir(directory: str) -> str | None:
         return None
 
 
-def _check_wsl_process_for_repo(line: str, creation_flags: int) -> str | None:
-    """Parse a WSL process line and attempt to extract its git repository."""
-    parts = line.strip().split(maxsplit=1)
-    if len(parts) != 2:
-        return None
-
-    comm, cwd = parts
-    if comm.lower() not in TARGET_IDES:
-        return None
-
-    git_cmd = [
-        WSL_EXE,
-        "-e",
-        "bash",
-        "-c",
-        f"cd '{cwd}' && git config --get remote.origin.url",
-    ]
-
-    try:
-        git_res = subprocess.run(
-            git_cmd, capture_output=True, text=True, creationflags=creation_flags
-        )
-        return _parse_github_url(git_res.stdout.strip())
-    except Exception:
-        return None
-
-
 def _get_wsl_active_repo() -> str | None:
-    """Scan native WSL processes for terminal editors (vim, nvim)."""
+    """Scan native WSL processes for any active git repository."""
     if sys.platform != "win32":
         return None
     try:
@@ -95,15 +104,39 @@ def _get_wsl_active_repo() -> str | None:
         if not any(c.isalnum() for c in res.stdout.replace("\x00", "")):
             return None
 
-        # Get command and CWD of all WSL processes
+        # Find all unique CWDs of running WSL processes that contain a .git directory
+        bash_script = (
+            "for p in /proc/[0-9]*; do "
+            "cwd=$(readlink $p/cwd 2>/dev/null); "
+            'if [[ -n "$cwd" && -d "$cwd/.git" ]]; then echo "$cwd"; fi; '
+            "done | sort -u"
+        )
+
         ps_res = subprocess.run(
-            [WSL_EXE, "-e", "ps", "-eo", "comm,cwd"],
+            [WSL_EXE, "-e", "bash", "-c", bash_script],
             capture_output=True,
             text=True,
             creationflags=creation_flags,
         )
-        for line in ps_res.stdout.replace("\x00", "").splitlines():
-            repo = _check_wsl_process_for_repo(line, creation_flags)
+
+        for cwd in ps_res.stdout.splitlines():
+            cwd = cwd.strip()
+            if not cwd:
+                continue
+
+            git_cmd = [
+                WSL_EXE,
+                "-e",
+                "bash",
+                "-c",
+                f"cd '{cwd}' && git config --get remote.origin.url",
+            ]
+
+            git_res = subprocess.run(
+                git_cmd, capture_output=True, text=True, creationflags=creation_flags
+            )
+
+            repo = _parse_github_url(git_res.stdout.strip())
             if repo:
                 return repo
     except Exception:
@@ -117,23 +150,56 @@ def _extract_repo_from_cmdline(cmdline: list) -> str | None:
         if not isinstance(arg, str):
             continue
 
+        # Decode URL encoded arguments
+        decoded_arg = urllib.parse.unquote(arg)
+
         # Handle VS Code attached to WSL
-        if "vscode-remote://wsl+" in arg:
+        if "vscode-remote://wsl+" in decoded_arg:
             try:
-                uri = arg.split("vscode-remote://wsl+")[1]
+                uri = decoded_arg.split("vscode-remote://wsl+")[1]
+                uri = uri.split("?")[0].split("#")[0]
                 distro = uri.split("/")[0]
                 wsl_path = uri[len(distro) :]
-                bs_char = "\\"
-                unc_path = f"\\\\wsl.localhost\\{distro}{wsl_path.replace('/', bs_char)}"
-                repo = _get_git_repo_from_dir(unc_path)
+
+                if wsl_path.endswith(".code-workspace"):
+                    wsl_path = wsl_path.rsplit("/", 1)[0]
+
+                # Query git natively inside WSL to bypass Windows UNC/dubious ownership locks
+                creation_flags = (
+                    getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000) if os.name == "nt" else 0
+                )
+
+                git_cmd = [
+                    WSL_EXE,
+                    "-d",
+                    distro,
+                    "-e",
+                    "bash",
+                    "-c",
+                    f"cd '{wsl_path}' && git config --get remote.origin.url",
+                ]
+
+                res = subprocess.run(
+                    git_cmd, capture_output=True, text=True, creationflags=creation_flags
+                )
+
+                repo = _parse_github_url(res.stdout.strip())
                 if repo:
                     return repo
             except Exception:
                 pass
-        elif os.path.isdir(arg):
-            repo = _get_git_repo_from_dir(arg)
-            if repo:
-                return repo
+
+        # Handle standard Windows paths
+        elif os.path.isdir(arg) or arg.endswith(".code-workspace"):
+            try:
+                check_dir = os.path.dirname(arg) if arg.endswith(".code-workspace") else arg
+                if os.path.isdir(check_dir):
+                    repo = _get_git_repo_from_dir(check_dir)
+                    if repo:
+                        return repo
+            except Exception:
+                pass
+
     return None
 
 
