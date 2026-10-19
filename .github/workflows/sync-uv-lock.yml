@@ -7,6 +7,8 @@ on:
 jobs:
   sync-lock:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     if: startsWith(github.head_ref, 'release-please-')
     steps:
       - name: Checkout repository
