@@ -2,14 +2,16 @@ import asyncio
 import importlib.metadata
 
 from server_ws import broadcast_payload, start_server
-from system_monitor import get_cpu_load, get_gpu_load, get_ram_usage
+from system_monitor import get_cpu_load, get_gpu_load, get_ram_usage, is_build_running
 
 
 async def monitor_system() -> None:
     """Continuously monitor system metrics and broadcast them."""
     while True:
+        current_mode = "build" if is_build_running() else "idle"
+
         payload = {
-            "mode": "idle",
+            "mode": current_mode,
             "cpu": get_cpu_load(),
             "ram": get_ram_usage(),
             "gpu": get_gpu_load(),
