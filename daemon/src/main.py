@@ -5,7 +5,7 @@ import time
 from config import load_config
 from context_tracker import detect_active_repo
 from github_monitor import get_latest_cicd_status
-from server_ws import broadcast_payload, start_server
+from server_udp import broadcast_payload, start_server
 from system_monitor import get_cpu_load, get_gpu_load, get_ram_usage, is_build_running
 
 # Global state for CI/CD
@@ -63,8 +63,8 @@ def _determine_system_mode(current_cicd: str, success_timestamp: float) -> str:
         return "cicd"
 
     if current_cicd == "success":
-        # Display the success animation for 15 seconds, then return to idle
-        if time.time() - success_timestamp < 15.0:
+        # Display the success animation for 10 seconds, then return to idle
+        if time.time() - success_timestamp < 10.0:
             return "cicd"
 
     return "idle"

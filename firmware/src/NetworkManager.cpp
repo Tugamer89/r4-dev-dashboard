@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include <WebSocketsClient.h>
+#include <WiFiUdp.h>
 
 #include "DisplayEngine.h"
 #include "StateMachine.h"
@@ -26,16 +26,92 @@
 #endif
 
 unsigned long lastNetworkAttempt    = 0;
-const unsigned long networkInterval = 10000;  // 10 seconds retry interval
+const unsigned long networkInterval = 5000;  // 5 seconds retry interval
 bool isWiFiConnected                = false;
 
-WebSocketsClient wsClient;
+WiFiUDP udp;
+unsigned long lastPingTime       = 0;
+const unsigned long pingInterval = 2000;  // Ping Python server every 2 seconds
 
-void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
-    if (type == WStype_TEXT) {
+void setupWiFi() {
+    Serial.println("Initializing WiFi module...");
+    if (WiFi.status() == WL_NO_MODULE) {
+        Serial.println("Communication with WiFi module failed!");
+        while (true) {
+            yield();  // Halt execution safely
+        }
+    }
+
+    Serial.print("Connecting to WiFi: ");
+    Serial.println(WIFI_SSID);
+
+    // Always disconnect first to clear the ESP32 state machine
+    WiFi.disconnect();
+    delay(100);
+    WiFi.begin(WIFI_SSID, WIFI_PASS);
+
+    unsigned long startAttemptTime = millis();
+    // Block until the initial connection is established to ensure stability
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+        if (millis() - startAttemptTime > networkInterval) {
+            Serial.println("\nRetrying connection...");
+            WiFi.disconnect();  // Clear stuck state before retrying
+            delay(100);
+            WiFi.begin(WIFI_SSID, WIFI_PASS);
+            startAttemptTime = millis();
+        }
+    }
+
+    Serial.println("\nWiFi Connected Successfully!");
+    isWiFiConnected = true;
+
+    // Configure UDP Client
+    udp.begin(WS_SERVER_PORT);
+    Serial.println("UDP listening and ready to send pings.");
+}
+
+void processIncomingData() {
+    // Maintain WiFi Connection
+    if (WiFi.status() != WL_CONNECTED) {
+        isWiFiConnected             = false;
+        unsigned long currentMillis = millis();
+        if (currentMillis - lastNetworkAttempt >= networkInterval || lastNetworkAttempt == 0) {
+            lastNetworkAttempt = currentMillis;
+            Serial.println("Connection lost. Reconnecting to WiFi...");
+            WiFi.disconnect();  // Reset the WiFi state machine
+            delay(100);
+            WiFi.begin(WIFI_SSID, WIFI_PASS);
+        }
+        return;  // Skip UDP processing if we don't have WiFi
+    }
+
+    if (!isWiFiConnected) {
+        Serial.println("WiFi Reconnected!");
+        isWiFiConnected = true;
+        udp.begin(WS_SERVER_PORT);  // Restart UDP listening
+    }
+
+    unsigned long currentMillis = millis();
+    if (currentMillis - lastPingTime >= pingInterval) {
+        lastPingTime = currentMillis;
+        // Send a lightweight ping to the Python server to register our IP
+        udp.beginPacket(WS_SERVER_IP, WS_SERVER_PORT);
+        udp.write((const uint8_t*)"PING", 4);
+        udp.endPacket();
+    }
+
+    int packetSize = udp.parsePacket();
+    if (packetSize) {
+        char packetBuffer[512];
+        int len = udp.read(packetBuffer, sizeof(packetBuffer) - 1);
+        if (len > 0) {
+            packetBuffer[len] = 0;  // Null terminate the string
+        }
+
         JsonDocument doc;
-        DeserializationError error = deserializeJson(doc, payload);
-
+        DeserializationError error = deserializeJson(doc, packetBuffer);
         if (error) {
             Serial.print("JSON Parse Failed: ");
             Serial.println(error.c_str());
@@ -73,76 +149,5 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
             float gpu = doc["gpu"];
             updateMetrics(cpu, ram, gpu);
         }
-
-    } else if (type == WStype_CONNECTED) {
-        Serial.println("WebSocket Connected!");
-    } else if (type == WStype_DISCONNECTED) {
-        Serial.println("WebSocket Disconnected. Reconnecting...");
     }
-}
-
-void setupWiFi() {
-    Serial.println("Initializing WiFi module...");
-    if (WiFi.status() == WL_NO_MODULE) {
-        Serial.println("Communication with WiFi module failed!");
-        while (true) {
-            yield();  // Halt execution safely
-        }
-    }
-
-    Serial.print("Connecting to WiFi: ");
-    Serial.println(WIFI_SSID);
-
-    WiFi.begin(WIFI_SSID, WIFI_PASS);
-    unsigned long startAttemptTime = millis();
-
-    // Block until the initial connection is established to ensure stability
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);  // Attendi mezzo secondo
-        Serial.print(".");
-
-        if (millis() - startAttemptTime > networkInterval) {
-            Serial.println("\nRetrying connection...");
-            WiFi.disconnect();
-            delay(100);
-            WiFi.begin(WIFI_SSID, WIFI_PASS);
-            startAttemptTime = millis();
-        }
-    }
-
-    Serial.println("\nWiFi Connected Successfully!");
-    isWiFiConnected = true;
-
-    // Configure WebSocket Client
-    Serial.print("Starting WS Client to ws://");
-    Serial.print(WS_SERVER_IP);
-    Serial.print(":");
-    Serial.println(WS_SERVER_PORT);
-
-    wsClient.begin(WS_SERVER_IP, WS_SERVER_PORT, "/");
-    wsClient.onEvent(webSocketEvent);
-    wsClient.setReconnectInterval(5000);  // Library handles auto-reconnect natively
-}
-
-void processIncomingData() {
-    // Maintain WiFi Connection
-    if (WiFi.status() != WL_CONNECTED) {
-        isWiFiConnected             = false;
-        unsigned long currentMillis = millis();
-
-        if (currentMillis - lastNetworkAttempt >= networkInterval || lastNetworkAttempt == 0) {
-            lastNetworkAttempt = currentMillis;
-            Serial.println("Connection lost. Reconnecting to WiFi...");
-            WiFi.begin(WIFI_SSID, WIFI_PASS);
-        }
-        return;  // Skip WS processing if we don't have WiFi
-    }
-
-    if (!isWiFiConnected) {
-        Serial.println("WiFi Reconnected!");
-        isWiFiConnected = true;
-    }
-
-    // Keep WebSocket connection alive and process incoming real-time payloads
-    wsClient.loop();
 }

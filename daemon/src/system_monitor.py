@@ -32,6 +32,7 @@ def get_gpu_load() -> float:
 
 
 BUILD_PROCESS_NAMES = {
+    "make",
     "cmake",
     "ninja",
     "gcc",
