@@ -12,6 +12,8 @@ float currentGpu = 0.0;
 unsigned long lastRenderTime       = 0;
 const unsigned long renderInterval = 100;  // 10 FPS rendering
 
+static SystemMode previousMode = SystemMode::MODE_IDLE;
+
 void setupDisplay() {
     matrix.begin();
 }
@@ -52,17 +54,23 @@ void renderIdle() {
 
 void renderBuild() {
     uint8_t frame[8][12] = {0};
-    static int pos       = 0;
+    static int pos       = 1;
     static int dir       = 1;
 
-    // Draw an animated scanning horizontal bar to indicate "working/building"
+    // Reset animation parameters if we just transitioned into the build state
+    if (previousMode != SystemMode::MODE_BUILD) {
+        pos = 1;
+        dir = 1;
+    }
+
+    // Draw an animated scanning horizontal bar
     for (int r = 2; r < 6; r++) {
         frame[r][pos] = 1;
         if (pos > 0) frame[r][pos - 1] = 1;  // Make the scanner 2 pixels wide
     }
 
     pos += dir;
-    if (pos >= 11 || pos <= 0) {
+    if (pos >= 11 || pos <= -dir) {
         dir = -dir;  // Reverse direction when hitting the edges
     }
 
@@ -100,4 +108,6 @@ void renderDisplay() {
             renderCicd();
             break;
     }
+
+    previousMode = currentMode;
 }
