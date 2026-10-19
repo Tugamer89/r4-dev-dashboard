@@ -42,8 +42,8 @@ run-daemon:
 	cd daemon && uv run python -m src.main
 
 run-daemon-win:
-	@echo "Starting Python daemon on Windows host..."
-	powershell.exe -ExecutionPolicy Bypass -Command "cd '$$(wslpath -w $$(pwd)/daemon)'; python3 src/main.py"
+	@echo "Opening new Windows terminal for the daemon..."
+	cmd.exe /c start "R4 Daemon" powershell.exe -NoLogo -NoExit -Command "cd '$$(wslpath -w $$(pwd)/daemon)'; python src/main.py"
 
 clean:
 	@echo "Cleaning builds..."
