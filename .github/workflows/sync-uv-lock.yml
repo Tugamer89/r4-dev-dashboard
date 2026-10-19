@@ -27,7 +27,7 @@ jobs:
 
       - name: Run Makefile setup / lock update
         run: |
-          make setup
+          cd daemon && uv venv && uv pip install -e .[dev]
 
       - name: Check for lock file changes
         id: verify-changed-files
