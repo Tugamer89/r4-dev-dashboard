@@ -57,7 +57,8 @@ usbipd bind --force --busid $targetBusId 2>$null
 
 # Attaching device to WSL (usbipd v4+ requires --wsl flag)
 Write-Host "Executing 'usbipd attach' to connect the board to WSL..."
-usbipd attach --wsl --busid $targetBusId
+Write-Host "NOTE: This window will stay open to auto-attach the board when it reboots during flashing. Press Ctrl+C to stop." -ForegroundColor Yellow
+usbipd attach --wsl --auto-attach --busid $targetBusId
 
 if ($LASTEXITCODE -eq 0 -or $?) {
     Write-Host "`nOperation completed successfully!" -ForegroundColor Green
