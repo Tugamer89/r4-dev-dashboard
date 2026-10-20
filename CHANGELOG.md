@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0](https://github.com/Tugamer89/r4-dev-dashboard/compare/v0.2.0...v0.3.0) (2026-10-20)
+
+
+### Features
+
+* add upload-win target for uploading firmware via Windows Host ([2c3f9f4](https://github.com/Tugamer89/r4-dev-dashboard/commit/2c3f9f410c95d1b3da1b7c0f6fd7239138baf9da))
+
+
+### Bug Fixes
+
+* increase WiFi retry interval to 10 seconds and ensure stability during connection setup ([5f45443](https://github.com/Tugamer89/r4-dev-dashboard/commit/5f454434c0f20ac4060dcd95b2ec21f84193f4ab))
+* remove debug print statement from is_build_running function ([0c78e84](https://github.com/Tugamer89/r4-dev-dashboard/commit/0c78e84f78261b789d7dfc9502898a3fe9424cec))
+
 ## [0.2.0](https://github.com/Tugamer89/r4-dev-dashboard/compare/v0.1.1...v0.2.0) (2026-10-19)
 
 
