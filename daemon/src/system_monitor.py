@@ -125,7 +125,6 @@ def is_build_running() -> bool:
                 # Strip file extensions for Windows compatibility
                 base_name = name.lower().split(".exe")[0]
                 if base_name in BUILD_PROCESS_NAMES:
-                    print(name)
                     _is_building_cache = True
                     return True
     except (psutil.NoSuchProcess, psutil.AccessDenied):
