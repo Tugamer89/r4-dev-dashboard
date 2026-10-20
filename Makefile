@@ -1,6 +1,6 @@
 BUSID ?=
 
-.PHONY: setup lint lint-fix build upload monitor upload-monitor attach run-daemon run-daemon-win clean
+.PHONY: setup lint lint-fix build upload monitor upload-monitor upload-win attach run-daemon run-daemon-win clean
 
 setup:
 	@echo "Setting up Python environment and pre-commit hooks..."
@@ -32,6 +32,10 @@ monitor:
 upload-monitor:
 	@echo "Uploading firmware and opening serial monitor..."
 	cd firmware && pio run --target upload && pio device monitor
+
+upload-win:
+	@echo "Uploading firmware to Arduino R4 via Windows Host..."
+	cmd.exe /c start "PIO Upload" powershell.exe -NoLogo -NoExit -Command "cd '$(shell wslpath -m $(PWD)/firmware)'; pio run --target upload"
 
 attach:
 	@echo "Attaching Arduino USB device to WSL..."
