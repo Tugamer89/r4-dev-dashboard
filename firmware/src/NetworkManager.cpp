@@ -26,7 +26,7 @@
 #endif
 
 unsigned long lastNetworkAttempt    = 0;
-const unsigned long networkInterval = 5000;  // 5 seconds retry interval
+const unsigned long networkInterval = 10000;  // 10 seconds retry interval
 bool isWiFiConnected                = false;
 
 WiFiUDP udp;
@@ -51,6 +51,7 @@ void setupWiFi() {
     WiFi.begin(WIFI_SSID, WIFI_PASS);
 
     unsigned long startAttemptTime = millis();
+
     // Block until the initial connection is established to ensure stability
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
@@ -77,6 +78,7 @@ void processIncomingData() {
     if (WiFi.status() != WL_CONNECTED) {
         isWiFiConnected             = false;
         unsigned long currentMillis = millis();
+
         if (currentMillis - lastNetworkAttempt >= networkInterval || lastNetworkAttempt == 0) {
             lastNetworkAttempt = currentMillis;
             Serial.println("Connection lost. Reconnecting to WiFi...");
@@ -112,6 +114,7 @@ void processIncomingData() {
 
         JsonDocument doc;
         DeserializationError error = deserializeJson(doc, packetBuffer);
+
         if (error) {
             Serial.print("JSON Parse Failed: ");
             Serial.println(error.c_str());
